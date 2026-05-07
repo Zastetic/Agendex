@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Agenda Online</string>
+    <string name="title_activity_main">Agenda Online</string>
+    <string name="package_name">com.agendaonline.app</string>
+    <string name="custom_url_scheme">com.agendaonline.app</string>
+</resources>
