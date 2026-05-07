@@ -1,0 +1,30 @@
+{
+  "name": "agenda-online",
+  "version": "1.0.0",
+  "description": "PWA de agenda online com servidor TypeScript.",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "cap:sync": "cap sync android",
+    "android:add": "cap add android",
+    "android:apk": "npm run cap:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "keywords": [
+    "agenda",
+    "pwa",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1"
+  }
+}

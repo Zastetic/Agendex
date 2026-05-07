@@ -1,0 +1,8 @@
+{
+  "appId": "com.agendaonline.app",
+  "appName": "Agenda Online",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  }
+}
