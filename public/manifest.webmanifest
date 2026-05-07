@@ -1,0 +1,19 @@
+{
+  "name": "Agenda Online",
+  "short_name": "Agenda",
+  "description": "Agenda online para criar eventos personalizados e acompanhar os compromissos do dia.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7f6",
+  "theme_color": "#165f6d",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

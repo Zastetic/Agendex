@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#165f6d">
+    <meta name="description" content="Agenda online PWA para criar e acompanhar eventos do dia.">
+    <title>Agenda Online</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Menu de navegacao">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <div>
+            <strong>Agenda Online</strong>
+            <small>Seu dia em ordem</small>
+          </div>
+        </div>
+
+        <nav class="nav-menu">
+          <a class="nav-link active" href="#agenda" data-section-link="agenda">
+            <span aria-hidden="true">▦</span>
+            Agenda
+          </a>
+          <a class="nav-link" href="#eventos" data-section-link="eventos">
+            <span aria-hidden="true">◷</span>
+            Eventos do dia
+          </a>
+          <a class="nav-link" href="#novo" data-section-link="novo">
+            <span aria-hidden="true">＋</span>
+            Novo evento
+          </a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="todayLabel"></p>
+            <h1>Agenda Online</h1>
+          </div>
+          <button class="install-button hidden" id="installButton" type="button">Instalar</button>
+        </header>
+
+        <section class="calendar-section" id="agenda" aria-labelledby="calendarTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Calendario</p>
+              <h2 id="calendarTitle">Mes atual</h2>
+            </div>
+            <div class="month-controls" aria-label="Controles do mes">
+              <button class="icon-button" id="prevMonth" type="button" aria-label="Mes anterior">‹</button>
+              <button class="today-button" id="goToday" type="button">Hoje</button>
+              <button class="icon-button" id="nextMonth" type="button" aria-label="Proximo mes">›</button>
+            </div>
+          </div>
+
+          <div class="weekday-grid" aria-hidden="true">
+            <span>Dom</span>
+            <span>Seg</span>
+            <span>Ter</span>
+            <span>Qua</span>
+            <span>Qui</span>
+            <span>Sex</span>
+            <span>Sab</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid" aria-label="Dias do calendario"></div>
+        </section>
+
+        <section class="day-section" id="eventos" aria-labelledby="selectedDayTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Eventos do dia</p>
+              <h2 id="selectedDayTitle">Selecione um dia</h2>
+            </div>
+            <span class="event-count" id="eventCount">0 eventos</span>
+          </div>
+          <div class="event-list" id="eventList"></div>
+        </section>
+
+        <section class="form-section" id="novo" aria-labelledby="formTitle">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Criacao</p>
+              <h2 id="formTitle">Novo evento</h2>
+            </div>
+          </div>
+
+          <form class="event-form" id="eventForm">
+            <label>
+              Titulo
+              <input id="eventTitle" name="title" type="text" maxlength="80" placeholder="Ex: Consulta, reuniao, treino" required>
+            </label>
+
+            <div class="form-row">
+              <label>
+                Data
+                <input id="eventDate" name="date" type="date" required>
+              </label>
+              <label>
+                Hora
+                <input id="eventTime" name="time" type="time">
+              </label>
+            </div>
+
+            <label>
+              Categoria
+              <select id="eventCategory" name="category" required>
+                <option value="pessoal">Pessoal</option>
+                <option value="trabalho">Trabalho</option>
+                <option value="saude">Saude</option>
+                <option value="estudo">Estudo</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+
+            <label>
+              Observacoes
+              <textarea id="eventNotes" name="notes" maxlength="400" rows="4" placeholder="Detalhes importantes"></textarea>
+            </label>
+
+            <button class="primary-button" type="submit">Salvar evento</button>
+            <p class="form-status" id="formStatus" role="status"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Menu principal">
+      <a class="mobile-nav-link active" href="#agenda" data-section-link="agenda">Agenda</a>
+      <a class="mobile-nav-link" href="#eventos" data-section-link="eventos">Eventos</a>
+      <a class="mobile-nav-link" href="#novo" data-section-link="novo">Novo</a>
+    </nav>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
