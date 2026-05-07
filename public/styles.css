@@ -6,6 +6,7 @@
   --muted: #607174;
   --line: #d7e3df;
   --primary: #165f6d;
+  --status: #0f3d46;
   --primary-dark: #0d3f49;
   --accent: #d98634;
   --danger: #ba3344;
@@ -30,9 +31,18 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(120deg, rgba(22, 95, 109, 0.08), transparent 34%),
+    linear-gradient(120deg, rgba(22, 95, 109, 0.1), transparent 34%),
+    linear-gradient(180deg, #dfeeed 0, #f4f7f6 180px),
     var(--bg);
   color: var(--ink);
+}
+
+body.event-screen-open {
+  overflow: hidden;
+}
+
+body.drawer-open {
+  overflow: hidden;
 }
 
 button,
@@ -55,19 +65,35 @@ button {
 .sidebar {
   position: sticky;
   top: 0;
+  z-index: 30;
   display: flex;
   height: 100vh;
   flex-direction: column;
   gap: 28px;
-  padding: 26px;
-  background: #102f35;
+  padding: max(26px, env(safe-area-inset-top)) 26px 26px;
+  background:
+    linear-gradient(180deg, #123b43, #0b2730 58%, #0a2026),
+    #102f35;
   color: #fff;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(10, 30, 34, 0.48);
+}
+
+.drawer-backdrop.hidden {
+  display: none;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .brand-mark {
@@ -108,7 +134,8 @@ button {
   gap: 10px;
   border-radius: 8px;
   padding: 13px 14px;
-  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .nav-link.active,
@@ -123,7 +150,7 @@ button {
   gap: 18px;
   align-content: start;
   margin: 0 auto;
-  padding: 26px 24px 96px;
+  padding: calc(18px + env(safe-area-inset-top)) 24px 96px;
 }
 
 .topbar,
@@ -135,7 +162,56 @@ button {
 }
 
 .topbar {
-  min-height: 72px;
+  position: relative;
+  min-height: 88px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 61, 70, 0.1);
+  border-radius: 8px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(15, 61, 70, 0.96), rgba(22, 95, 109, 0.9)),
+    var(--status);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.topbar::after {
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  left: 18px;
+  height: 4px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(90deg, var(--accent), #f1c36d 45%, #64b7ad);
+  content: "";
+}
+
+.topbar .eyebrow {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.topbar-copy {
+  min-width: 0;
+}
+
+.menu-button {
+  display: none;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.menu-button span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: #fff;
 }
 
 .eyebrow {
@@ -171,7 +247,63 @@ h2 {
 }
 
 .calendar-section {
+  position: relative;
+  overflow: hidden;
   padding: 18px;
+}
+
+.calendar-section::before {
+  display: block;
+  width: 72px;
+  height: 5px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--primary));
+  content: "";
+}
+
+.event-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(12, 31, 35, 0.52);
+}
+
+.event-screen.hidden {
+  display: none;
+}
+
+.event-screen-panel {
+  display: grid;
+  width: min(1060px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  gap: 16px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.event-screen-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.event-screen-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  gap: 16px;
+}
+
+.close-screen-button {
+  flex: 0 0 auto;
 }
 
 .day-section,
@@ -183,6 +315,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .icon-button,
@@ -212,6 +345,16 @@ h2 {
   padding: 0 14px;
   background: var(--primary);
   color: #fff;
+}
+
+.year-select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 36px 0 12px;
+  background: var(--surface);
+  color: var(--primary-dark);
+  font-weight: 900;
 }
 
 .install-button.hidden {
@@ -250,13 +393,18 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 9px;
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 250, 0.98)),
+    var(--surface);
   color: var(--ink);
   text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .day-button:hover {
   border-color: var(--primary);
+  box-shadow: 0 10px 26px rgba(20, 48, 52, 0.1);
+  transform: translateY(-1px);
 }
 
 .day-button.outside {
@@ -266,7 +414,8 @@ h2 {
 
 .day-button.selected {
   border-color: var(--primary);
-  box-shadow: inset 0 0 0 2px var(--primary);
+  background: #f3fbf9;
+  box-shadow: inset 0 0 0 2px var(--primary), 0 10px 28px rgba(22, 95, 109, 0.14);
 }
 
 .day-button.today .day-number {
@@ -456,7 +605,7 @@ h2 {
   left: 12px;
   z-index: 10;
   display: none;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -481,7 +630,7 @@ h2 {
 
 @media (min-width: 980px) {
   .main-content {
-    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .topbar,
@@ -496,21 +645,53 @@ h2 {
   }
 
   .sidebar {
-    display: none;
+    position: fixed;
+    left: 0;
+    width: min(82vw, 310px);
+    transform: translateX(-102%);
+    transition: transform 0.24s ease;
+    box-shadow: 24px 0 70px rgba(4, 22, 26, 0.34);
+  }
+
+  body.drawer-open .sidebar {
+    transform: translateX(0);
   }
 
   .main-content {
-    padding: 18px 12px 92px;
+    padding: calc(12px + env(safe-area-inset-top)) 12px 28px;
   }
 
   .topbar {
-    align-items: flex-start;
+    align-items: center;
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .menu-button {
+    display: grid;
+  }
+
+  h1 {
+    font-size: 1.45rem;
   }
 
   .calendar-section,
   .day-section,
   .form-section {
     padding: 14px;
+  }
+
+  .event-screen {
+    padding: 12px;
+  }
+
+  .event-screen-panel {
+    max-height: calc(100vh - 24px);
+    padding: 14px;
+  }
+
+  .event-screen-content {
+    grid-template-columns: 1fr;
   }
 
   .section-heading {
@@ -524,6 +705,11 @@ h2 {
 
   .today-button {
     flex: 1;
+  }
+
+  .year-select {
+    flex: 1;
+    min-width: 110px;
   }
 
   .weekday-grid {
@@ -549,7 +735,7 @@ h2 {
   }
 
   .mobile-nav {
-    display: grid;
+    display: none;
   }
 }
 

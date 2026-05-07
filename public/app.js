@@ -2,21 +2,33 @@ const state = {
   visibleDate: new Date(),
   selectedDate: toDateKey(new Date()),
   events: [],
-  deferredInstallPrompt: null
+  deferredInstallPrompt: null,
+  lastDayClickDate: "",
+  lastDayClickTime: 0,
+  calendarTouchStart: null,
+  drawerTouchStart: null
 };
 
 const STORAGE_KEY = "agenda-online-events";
+const DOUBLE_TAP_DELAY = 420;
+const SWIPE_THRESHOLD = 70;
 
+const calendarSection = document.querySelector("#agenda");
 const calendarGrid = document.querySelector("#calendarGrid");
 const calendarTitle = document.querySelector("#calendarTitle");
+const yearSelect = document.querySelector("#yearSelect");
 const selectedDayTitle = document.querySelector("#selectedDayTitle");
 const eventCount = document.querySelector("#eventCount");
 const eventList = document.querySelector("#eventList");
 const eventForm = document.querySelector("#eventForm");
 const eventDate = document.querySelector("#eventDate");
+const eventScreen = document.querySelector("#eventScreen");
+const closeEventScreenButton = document.querySelector("#closeEventScreen");
 const formStatus = document.querySelector("#formStatus");
 const todayLabel = document.querySelector("#todayLabel");
 const installButton = document.querySelector("#installButton");
+const openMenuButton = document.querySelector("#openMenu");
+const drawerBackdrop = document.querySelector("#drawerBackdrop");
 
 const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "long",
@@ -49,6 +61,10 @@ function eventsForDate(dateKey) {
   return state.events.filter((event) => event.date === dateKey);
 }
 
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 function categoryLabel(category) {
   const labels = {
     pessoal: "Pessoal",
@@ -61,7 +77,14 @@ function categoryLabel(category) {
 }
 
 function isNativeApp() {
-  return location.protocol === "capacitor:" || location.protocol === "file:";
+  return Boolean(window.Capacitor?.isNativePlatform?.())
+    || Boolean(window.Capacitor)
+    || location.protocol === "capacitor:"
+    || location.protocol === "file:";
+}
+
+function responseIsJson(response) {
+  return response.headers.get("content-type")?.includes("application/json");
 }
 
 function sortEvents(a, b) {
@@ -123,7 +146,7 @@ async function loadEvents() {
 
   try {
     const response = await fetch("/api/events");
-    if (!response.ok) {
+    if (!response.ok || !responseIsJson(response)) {
       throw new Error("Nao foi possivel carregar os eventos.");
     }
 
@@ -131,6 +154,23 @@ async function loadEvents() {
   } catch {
     state.events = readLocalEvents();
   }
+}
+
+function renderYearOptions() {
+  const visibleYear = state.visibleDate.getFullYear();
+  const startYear = visibleYear - 8;
+  const endYear = visibleYear + 8;
+
+  yearSelect.innerHTML = "";
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
+
+  yearSelect.value = String(visibleYear);
 }
 
 function renderCalendar() {
@@ -154,6 +194,7 @@ function renderCalendar() {
     button.className = "day-button";
     button.dataset.date = dateKey;
     button.setAttribute("aria-label", `${dayFormatter.format(date)} com ${dayEvents.length} eventos`);
+    button.title = "Abrir agenda do dia";
 
     if (date.getMonth() !== month) {
       button.classList.add("outside");
@@ -181,7 +222,8 @@ function renderCalendar() {
     });
 
     button.append(number, dots);
-    button.addEventListener("click", () => selectDate(dateKey));
+    button.addEventListener("click", () => handleDayClick(dateKey));
+    button.addEventListener("dblclick", () => openEventScreen(dateKey));
     calendarGrid.appendChild(button);
   }
 }
@@ -242,16 +284,16 @@ function renderSelectedDay() {
 
 function renderNav() {
   const links = document.querySelectorAll("[data-section-link]");
-  const hash = window.location.hash.replace("#", "") || "agenda";
 
   links.forEach((link) => {
-    link.classList.toggle("active", link.dataset.sectionLink === hash);
+    link.classList.toggle("active", link.dataset.sectionLink === "agenda");
   });
 }
 
 function render() {
   todayLabel.textContent = capitalize(dayFormatter.format(new Date()));
   eventDate.value = state.selectedDate;
+  renderYearOptions();
   renderCalendar();
   renderSelectedDay();
   renderNav();
@@ -261,6 +303,53 @@ function selectDate(dateKey) {
   state.selectedDate = dateKey;
   state.visibleDate = fromDateKey(dateKey);
   render();
+}
+
+function selectVisibleMonth(year, month) {
+  const selected = fromDateKey(state.selectedDate);
+  const day = Math.min(selected.getDate(), daysInMonth(year, month));
+  selectDate(toDateKey(new Date(year, month, day)));
+}
+
+function changeVisibleMonth(delta) {
+  const next = new Date(state.visibleDate.getFullYear(), state.visibleDate.getMonth() + delta, 1);
+  selectVisibleMonth(next.getFullYear(), next.getMonth());
+}
+
+function handleDayClick(dateKey) {
+  const now = Date.now();
+  const isDoubleTap = state.lastDayClickDate === dateKey && now - state.lastDayClickTime < DOUBLE_TAP_DELAY;
+
+  state.lastDayClickDate = dateKey;
+  state.lastDayClickTime = now;
+  selectDate(dateKey);
+
+  if (isDoubleTap) {
+    openEventScreen(dateKey);
+  }
+}
+
+function openEventScreen(dateKey) {
+  selectDate(dateKey);
+  formStatus.textContent = "";
+  eventScreen.classList.remove("hidden");
+  document.body.classList.add("event-screen-open");
+  closeEventScreenButton.focus();
+}
+
+function closeEventScreen() {
+  eventScreen.classList.add("hidden");
+  document.body.classList.remove("event-screen-open");
+}
+
+function openDrawer() {
+  drawerBackdrop.classList.remove("hidden");
+  document.body.classList.add("drawer-open");
+}
+
+function closeDrawer() {
+  drawerBackdrop.classList.add("hidden");
+  document.body.classList.remove("drawer-open");
 }
 
 async function createEvent(formData) {
@@ -278,7 +367,11 @@ async function createEvent(formData) {
     body: JSON.stringify(payload)
   });
 
-  if (!response.ok) {
+  if (!response.ok || !responseIsJson(response)) {
+    if (!responseIsJson(response)) {
+      return createLocalEvent(payload);
+    }
+
     const payload = await response.json();
     throw new Error(payload.error ?? "Nao foi possivel salvar.");
   }
@@ -298,7 +391,14 @@ async function deleteEvent(id) {
     method: "DELETE"
   });
 
-  if (!response.ok) {
+  if (!response.ok || !responseIsJson(response)) {
+    if (!responseIsJson(response)) {
+      deleteLocalEvent(id);
+      await loadEvents();
+      render();
+      return;
+    }
+
     formStatus.textContent = "Nao foi possivel excluir o evento.";
     return;
   }
@@ -308,17 +408,19 @@ async function deleteEvent(id) {
 }
 
 document.querySelector("#prevMonth").addEventListener("click", () => {
-  state.visibleDate = new Date(state.visibleDate.getFullYear(), state.visibleDate.getMonth() - 1, 1);
-  renderCalendar();
+  changeVisibleMonth(-1);
 });
 
 document.querySelector("#nextMonth").addEventListener("click", () => {
-  state.visibleDate = new Date(state.visibleDate.getFullYear(), state.visibleDate.getMonth() + 1, 1);
-  renderCalendar();
+  changeVisibleMonth(1);
 });
 
 document.querySelector("#goToday").addEventListener("click", () => {
   selectDate(toDateKey(new Date()));
+});
+
+yearSelect.addEventListener("change", () => {
+  selectVisibleMonth(Number(yearSelect.value), state.visibleDate.getMonth());
 });
 
 eventForm.addEventListener("submit", async (event) => {
@@ -334,13 +436,88 @@ eventForm.addEventListener("submit", async (event) => {
     await loadEvents();
     render();
     formStatus.textContent = "Evento salvo.";
-    window.location.hash = "#eventos";
   } catch (error) {
     formStatus.textContent = error.message;
   }
 });
 
-window.addEventListener("hashchange", renderNav);
+closeEventScreenButton.addEventListener("click", closeEventScreen);
+
+openMenuButton.addEventListener("click", openDrawer);
+drawerBackdrop.addEventListener("click", closeDrawer);
+
+document.querySelectorAll(".nav-link").forEach((link) => {
+  link.addEventListener("click", closeDrawer);
+});
+
+eventScreen.addEventListener("click", (event) => {
+  if (event.target === eventScreen) {
+    closeEventScreen();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !eventScreen.classList.contains("hidden")) {
+    closeEventScreen();
+  }
+
+  if (event.key === "Escape" && document.body.classList.contains("drawer-open")) {
+    closeDrawer();
+  }
+});
+
+calendarSection.addEventListener("touchstart", (event) => {
+  const touch = event.touches[0];
+  state.calendarTouchStart = { x: touch.clientX, y: touch.clientY };
+}, { passive: true });
+
+calendarSection.addEventListener("touchend", (event) => {
+  if (!state.calendarTouchStart) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - state.calendarTouchStart.x;
+  const deltaY = touch.clientY - state.calendarTouchStart.y;
+  state.calendarTouchStart = null;
+
+  if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaY) < 55) {
+    changeVisibleMonth(deltaX < 0 ? 1 : -1);
+  }
+}, { passive: true });
+
+window.addEventListener("touchstart", (event) => {
+  const touch = event.touches[0];
+  const drawerIsOpen = document.body.classList.contains("drawer-open");
+
+  if (touch.clientX < 28 || drawerIsOpen) {
+    state.drawerTouchStart = { x: touch.clientX, y: touch.clientY, wasOpen: drawerIsOpen };
+  }
+}, { passive: true });
+
+window.addEventListener("touchend", (event) => {
+  if (!state.drawerTouchStart) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - state.drawerTouchStart.x;
+  const deltaY = touch.clientY - state.drawerTouchStart.y;
+  const wasOpen = state.drawerTouchStart.wasOpen;
+  state.drawerTouchStart = null;
+
+  if (Math.abs(deltaY) > 70) {
+    return;
+  }
+
+  if (!wasOpen && deltaX > SWIPE_THRESHOLD) {
+    openDrawer();
+  }
+
+  if (wasOpen && deltaX < -SWIPE_THRESHOLD) {
+    closeDrawer();
+  }
+}, { passive: true });
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
